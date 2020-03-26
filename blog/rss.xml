@@ -3,18 +3,18 @@
 
 <channel>
 <title>Blog</title>
-<link>http://localhost:8000/</link>
+<link>https://piresrui.github.io//</link>
 <description>Pass on the knowledge</description>
 
 <item>
 <title>Rando Post</title>
-<link>http://localhost:8000/blog/proin-quam/</link>
+<link>https://piresrui.github.io//blog/proin-quam/</link>
 <description>
 <![CDATA[
 <p>
-Test :) Rando blog mate :)&nbsp;<a href="http://localhost:8000/blog/proin-quam/">...</a>
+Test :) Rando blog mate :)&nbsp;<a href="https://piresrui.github.io//blog/proin-quam/">...</a>
 </p>
-<p><a href="http://localhost:8000/blog/proin-quam/">Read More</a></p>
+<p><a href="https://piresrui.github.io//blog/proin-quam/">Read More</a></p>
 ]]>
 </description>
 <pubDate>Mon, 01 Jan 2018 00:00:00 +0000</pubDate>
