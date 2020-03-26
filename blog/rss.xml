@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+
+<channel>
+<title>Blog</title>
+<link>http://localhost:8000/</link>
+<description>Pass on the knowledge</description>
+
+<item>
+<title>Rando Post</title>
+<link>http://localhost:8000/blog/proin-quam/</link>
+<description>
+<![CDATA[
+<p>
+Test :) Rando blog mate :)&nbsp;<a href="http://localhost:8000/blog/proin-quam/">...</a>
+</p>
+<p><a href="http://localhost:8000/blog/proin-quam/">Read More</a></p>
+]]>
+</description>
+<pubDate>Mon, 01 Jan 2018 00:00:00 +0000</pubDate>
+</item>
+
+
+</channel>
+</rss>
