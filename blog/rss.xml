@@ -2,13 +2,13 @@
 <rss version="2.0">
 
 <channel>
-<title>Blog</title>
-<link>https://piresrui.github.io//</link>
+<title>Octopi Blog</title>
+<link>https://piresrui.github.io/</link>
 <description>Pass on the knowledge</description>
 
 <item>
 <title>Common Beginner Issues in Celery</title>
-<link>https://piresrui.github.io//blog/celery/</link>
+<link>https://piresrui.github.io/blog/celery/</link>
 <description>
 <![CDATA[
 <p>
