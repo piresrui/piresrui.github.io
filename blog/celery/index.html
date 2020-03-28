@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Common Beginner Issues in Celery - Python's Standard Task Queue Library</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" type="text/css" href="/css/style.css">
+    
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:description" content="Little walkthrough of common issues beginners run into when picking up celery" />
+    <meta name="twitter:title" content="Common Beginner Issues in Celery - Python's Standard Task Queue Library" />
+    <meta name="twitter:site" content="@rfnpires" />
+    <meta name="twitter:creator" content="@rfnpires" />
+</head>
+
+<body id="celery">
+
+<nav>
+<section>
+    <span class="home">
+        <a href="/">Home</a>
+    </span>
+    <span class="links">
+        <a href="/blog/">Blog</a>
+        <a href="/about/">About</a>
+    </span>
+</section>
+</nav>
+
+<main>
+<article>
+<h1><a href="/blog/celery/">Common Beginner Issues in Celery</a></h1>
+<p class="meta">Published on 2020-03-27 by <b>Rui Pires</b></p>
+<h1>Introduction</h1>
+<p>For those unaware, although that is likely not your case, <a href="http://www.celeryproject.org/">Celery</a> is <em>&quot;an asynchronous task queue/job queue based on distributed message passing&quot;</em>. It is the &quot;standard&quot; as far as task queue libraries for python go, but whether it is the best library is up for debate.</p>
+<p>Anyway, this isn't really a step-by-step tutorial for how to build a celery-based app. It is, however, a <em>grouping</em> of common doubts/issues people run into when picking up celery.
+I use celery all the time at Aptoide and a lot of the cases I'm going to present here were issues/doubts I ran into as a new user of celery. So strap up!</p>
+<h1>Workflows</h1>
+<h2>Chains</h2>
+<p>Chains are a powerfull tool, like all other workflow primitives, however I tend to find myself dealing with them the most.</p>
+<p>Chains allow you to run a set of tasks linearly, with the ability to pass the output from the previous to the next. So essentially they allow you to create a pipeline of tasks.</p>
+<pre><code class="language-python">from celery import chain
+
+ch = chain(pre_task.s(some_input) | process.s() | finalize.s())
+</code></pre>
+<p>So the output of the first will be passed to the second and so on. Note that the output will be prepended, so if the <em>process</em> task were to have two arguments.</p>
+<pre><code class="language-python">@app.task
+def pre_task(x):
+    return x + 10
+
+@app.task
+def process(x, y):
+    print(f&quot;x: {x}, y: {y}&quot;)
+    return x + y
+
+ch = chain(pre_task.s(1) | process.s(2) | finalize.s())
+</code></pre>
+<p>Then the print would yield:</p>
+<pre><code>x: 11, y: 2
+</code></pre>
+<h3>Multiple arguments</h3>
+<p>A usual difficulty people have is wanting to pass multiple arguments to the next task in the chain. When you return a tuple of tasks, what do you get on the next task? You guessed it, a tuple.
+This can be annoying, especially for readability purposes.</p>
+<pre><code class="language-python">@app.task
+def pre_task(x):
+    return x, x + 10
+
+@app.task
+def process(x, y):
+    arg_1 = x[0]
+    arg_2 = x[1]
+    ... 
+</code></pre>
+<p>This is terrible for other people picking up your code. So there's two &quot;solutions&quot; for this:</p>
+<ol>
+<li>Return a dictionary</li>
+</ol>
+<p>Instead of the tuple, return a dictionary and agree on the keys.</p>
+<pre><code class="language-python">@app.task
+def pre_task(x):
+    return {
+        'pre_op': x, 
+        'result': x + 10
+    }
+
+@app.task
+def process(x, y):
+    arg_1 = x['pre_op']
+    arg_2 = x['result']
+    ... 
+</code></pre>
+<p>Better? Ehn. Maybe. Depends on what you want.</p>
+<ol start="2">
+<li>Unpack the tuple</li>
+</ol>
+<p>Create a decorator to unpack your arguments.</p>
+<pre><code class="language-python">def unpack_tuple(f):
+    &quot;&quot;&quot;
+    Source:
+    https://wiredcraft.com/blog/3-gotchas-for-celery/
+    &quot;&quot;&quot;
+    @functools.wraps(f)
+    def _wrapper(*args, **kwargs):
+        args = args[0]
+
+        if len(args) &gt; 0 and type(args[0]) == tuple:
+            args = args[0] + args[1:]
+        return f(*args, **kwargs)
+    return _wrapper
+
+
+@app.task
+@unpack_tuple
+def process(pre_op: int, result: int, y: int):
+    ...
+</code></pre>
+<p>Now you can specify your arguments in the actual function, better readabilty in my opinion!</p>
+<h3>Exiting chains</h3>
+<h4>On Error</h4>
+<p>If an exception is raised and you don't catch it, then the chain will be terminated. You can create an <em>on_error</em> task and specify in the chain creation that it should be ran when an error is encountered.</p>
+<pre><code class="language-python">
+@app.task
+def error_task(request, exec, traceback):
+    &quot;&quot;&quot;
+    :param exec: Exception raised
+    :param traceback: Call traceback
+    &quot;&quot;&quot;    
+    # do something with error
+    pass
+
+ch = chain(...).on_error(error_task.s())
+</code></pre>
+<h4>On some success case</h4>
+<p>One really annoying case is when you want to break the chain, without having it report as an error. There is no &quot;clean&quot; way to do it.</p>
+<pre><code class="language-python">def end_chain(cchain, reason):
+    &quot;&quot;&quot;
+    :param cchain: Celery context
+    :param reason: Reason for exit
+    &quot;&quot;&quot;
+    # End Chain:
+    cchain.request.chain = None
+    logger.info(f&quot;Chain terminated - {reason}&quot;)
+    # something you wanna do before exit
+
+
+@app.task(bind=True)
+def task(self, x, y):
+    if success:
+        end_chain(self, &quot;Earth is exploding, no need to continue!&quot;)
+    # business logic
+</code></pre>
+<p>For this to work the task needs to take the <code>bind=True</code> parameter, so it has access to the context of the chain.</p>
+<h2>Groups</h2>
+<p>Groups are another Celery primitive. They allow you to run multiple tasks in parallel, as a group.
+Sometimes, you may want to chain some groups together. Reasonable right?</p>
+<p>Well not really. When you chain groups together, Celery turns them into a chord. So if you have:</p>
+<pre><code class="language-python">ch = chain( group1 | group2 | final.s())
+</code></pre>
+<p>The <em>final</em> task will execute seemingly at random times.</p>
+<p>The solution for this is to create a dummy task. The dummy will be used as the callback for the chord, and it won't really fo anything so there's no problem if it runs before the end of the group.</p>
+<p>Since Celery turns the chain of groups into a chord, you can go right ahead a create the chord youself, and then chain the chords together.</p>
+<pre><code class="language-python">
+@app.task
+def dummy():
+    pass
+
+part1 = chord( group1, dummy.s() )
+part2 = chord( group2, dummy.s() )
+
+ch = chain( part1 | part2 | final.s() )
+
+</code></pre>
+<h1>Configuration</h1>
+<p>So Celery allows you to configure it a ton of different ways/places, and some of these configurations don't play well together.</p>
+<h2>Prefetching</h2>
+<p>By default, worker processes prefetch tasks. This can be good for performance, but that is not always the case.
+So say you have a worker node with <code>--concurrency=5</code>, this means you have 5 concurrrent processes processing tasks in that node.
+By default, the tasks in that node will be evenly divided between worker processes. So far so good right?</p>
+<p>Well, sure, if all your tasks are short running tasks or long running tasks. But if you have both long and short running tasks, then you can have 4 processes doing nothing and 1 waiting on a long task plus all the short tasks it prefetched.</p>
+<p>The solution for this is passing an <code>-Ofair</code> flag to the worker node. Now, tasks will only be distrubed when the process is available!</p>
+<h1>Routing</h1>
+<p>Celery allows you to create different queues to route your tasks to, and then you can have workers subscribe to certain queues and they'll get assigned tasks from those queues.</p>
+<pre><code class="language-python">from celery import Celery
+from kombu import Queue, Exchange
+
+# Create your app
+app = Celery(...)
+
+app.conf.task_queues = (
+    Queue(&quot;priority&quot;, Exchange(&quot;priority&quot;), routing_key=&quot;proj.priority&quot;),
+    Queue(&quot;default&quot;, Exchange(&quot;default&quot;), routing_key=&quot;proj.default&quot;),
+    Queue(&quot;slow&quot;, Exchamge(&quot;slow&quot;), routing_key=&quot;proj.slow&quot;),
+)
+
+app.conf.task_default_queue = 'default'
+app.conf.task_default_exchange = 'default'
+app.conf.task_default_routing_key = 'proj.default'
+</code></pre>
+<p>Now, there are several ways you can route your tasks in Celery.</p>
+<ol>
+<li>When you call the task, specify the queue:</li>
+</ol>
+<pre><code class="language-python">add(1, 2).apply_async(queue=&quot;priority&quot;)
+</code></pre>
+<p>Obviously this isn't ideal, what if you have 100 tasks and suddenly you change your queue setup? I certainly don't want to go and change every task by hand. Maybe get your intern to do it.</p>
+<ol start="2">
+<li>Routing Settings</li>
+</ol>
+<p>You can also have tasks assigned to queues based on names.
+Celery will go thorugh this list in order and use it's first match as the queue. If there are no matches, then it'll use the default queue.</p>
+<pre><code class="language-python">
+app.conf.task_routes = [
+    {
+        'project.tasks.*': {
+            'queue': 'priority'
+        },
+        'project.other_tasks.*': {
+            'queue': 'slow'
+        }
+    }
+]
+</code></pre>
+<ol start="3">
+<li>Routing Function</li>
+</ol>
+<p>Finally, you can also define a more dynamic way to route functions, using routing functions.</p>
+<p>With routing functions you can decide on your queues based on the task name for example.
+Take care to return None if you don't match, since celery decides to continue search if this function returns None.</p>
+<pre><code class="language-python">def router(name, args, kwargs, options, task=None, **kw):
+    if &quot;project.tasks&quot; in name:
+        return {
+            'queue': 'priority'
+        }
+</code></pre>
+<p>Then you pass the routing function to the <em>task_routes</em> variable.</p>
+<pre><code class="language-python">app.conf.task_routes = [
+    ..., # previous dict for example
+    router
+]
+</code></pre>
+<p>You can also alter the name of your tasks in the task decorator to better fit this function model, without having to name all your task functions similarly.</p>
+<pre><code class="language-python">@app.task(name=&quot;queue:task_name&quot;)
+def task_that_does_something
+    pass
+</code></pre>
+<p>Then you can alter you function to split on the division token, in this case it's ':'</p>
+<pre><code class="language-python">def router(name, args, kwargs, options, task=None, **kw):
+    if ':' in name:
+        queue, _ = name.split(':')
+        
+        return {
+            'queue': queue
+        }
+</code></pre>
+<h1>Conclusion</h1>
+<p>And that's it! From memory, these were the most common use cases I found myself searching for when using Celery. Hope this helps you!</p>
+
+</article>
+
+</main>
+
+<footer>
+<section>
+<p>&copy; 2020 Rui Pires</p>
+<p>
+    <a href="https://twitter.com/rfnpires">Twitter</a>
+    <a href="https://github.com/piresrui">GitHub</a>
+    <a href="mailto:rpires.projects@gmail.com" target="_top">Mail</a>
+</p>
+</section>
+</footer>
+
+</body>
+</html>

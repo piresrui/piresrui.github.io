@@ -7,17 +7,17 @@
 <description>Pass on the knowledge</description>
 
 <item>
-<title>Rando Post</title>
-<link>https://piresrui.github.io//blog/rando/</link>
+<title>Common Beginner Issues in Celery</title>
+<link>https://piresrui.github.io//blog/celery/</link>
 <description>
 <![CDATA[
 <p>
-Test :) Rando blog mate :)&nbsp;<a href="https://piresrui.github.io//blog/rando/">...</a>
+Introduction For those unaware, although that is likely not your case, Celery is &quot;an asynchronous task queue/job queue based on distributed message passing&quot; . It&nbsp;<a href="https://piresrui.github.io//blog/celery/">...</a>
 </p>
-<p><a href="https://piresrui.github.io//blog/rando/">Read More</a></p>
+<p><a href="https://piresrui.github.io//blog/celery/">Read More</a></p>
 ]]>
 </description>
-<pubDate>Thu, 26 Mar 2020 00:00:00 +0000</pubDate>
+<pubDate>Fri, 27 Mar 2020 00:00:00 +0000</pubDate>
 </item>
 
 
