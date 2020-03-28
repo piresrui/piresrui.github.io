@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width">
     <link rel="stylesheet" type="text/css" href="/css/style.css">
-    
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:description" content="Little walkthrough of common issues beginners run into when picking up celery" />
     <meta name="twitter:title" content="Common Beginner Issues in Celery - Python's Standard Task Queue Library" />
@@ -37,13 +36,13 @@
 I use celery all the time at Aptoide and a lot of the cases I'm going to present here were issues/doubts I ran into as a new user of celery. So strap up!</p>
 <h1>Workflows</h1>
 <h2>Chains</h2>
-<p>Chains are a powerfull tool, like all other workflow primitives, however I tend to find myself dealing with them the most.</p>
+<p>Chains are a powerful tool, like all other workflow primitives, however I tend to find myself dealing with them the most.</p>
 <p>Chains allow you to run a set of tasks linearly, with the ability to pass the output from the previous to the next. So essentially they allow you to create a pipeline of tasks.</p>
 <pre><code class="language-python">from celery import chain
 
 ch = chain(pre_task.s(some_input) | process.s() | finalize.s())
 </code></pre>
-<p>So the output of the first will be passed to the second and so on. Note that the output will be prepended, so if the <em>process</em> task were to have two arguments.</p>
+<p>So the output of the first is passed to the second and so on. Note that the output is prepended, so if the <em>process</em> task were to have two arguments.</p>
 <pre><code class="language-python">@app.task
 def pre_task(x):
     return x + 10
@@ -55,7 +54,7 @@ def process(x, y):
 
 ch = chain(pre_task.s(1) | process.s(2) | finalize.s())
 </code></pre>
-<p>Then the print would yield:</p>
+<p>Then the print yields:</p>
 <pre><code>x: 11, y: 2
 </code></pre>
 <h3>Multiple arguments</h3>
@@ -131,7 +130,7 @@ def error_task(request, exec, traceback):
 ch = chain(...).on_error(error_task.s())
 </code></pre>
 <h4>On some success case</h4>
-<p>One really annoying case is when you want to break the chain, without having it report as an error. There is no &quot;clean&quot; way to do it.</p>
+<p>One really annoying case is when you want to break the chain, without having it reported as an error. There is no &quot;clean&quot; way to do it.</p>
 <pre><code class="language-python">def end_chain(cchain, reason):
     &quot;&quot;&quot;
     :param cchain: Celery context
@@ -158,7 +157,7 @@ Sometimes, you may want to chain some groups together. Reasonable right?</p>
 </code></pre>
 <p>The <em>final</em> task will execute seemingly at random times.</p>
 <p>The solution for this is to create a dummy task. The dummy will be used as the callback for the chord, and it won't really fo anything so there's no problem if it runs before the end of the group.</p>
-<p>Since Celery turns the chain of groups into a chord, you can go right ahead a create the chord youself, and then chain the chords together.</p>
+<p>Since Celery turns the chain of groups into a chord, you can go right ahead a create the chord yourself, and then chain the chords together.</p>
 <pre><code class="language-python">
 @app.task
 def dummy():
@@ -170,14 +169,12 @@ part2 = chord( group2, dummy.s() )
 ch = chain( part1 | part2 | final.s() )
 
 </code></pre>
-<h1>Configuration</h1>
-<p>So Celery allows you to configure it a ton of different ways/places, and some of these configurations don't play well together.</p>
-<h2>Prefetching</h2>
+<h1>Prefetching</h1>
 <p>By default, worker processes prefetch tasks. This can be good for performance, but that is not always the case.
-So say you have a worker node with <code>--concurrency=5</code>, this means you have 5 concurrrent processes processing tasks in that node.
+So say you have a worker node with <code>--concurrency=5</code>, this means you have 5 concurrent processes processing tasks in that node.
 By default, the tasks in that node will be evenly divided between worker processes. So far so good right?</p>
 <p>Well, sure, if all your tasks are short running tasks or long running tasks. But if you have both long and short running tasks, then you can have 4 processes doing nothing and 1 waiting on a long task plus all the short tasks it prefetched.</p>
-<p>The solution for this is passing an <code>-Ofair</code> flag to the worker node. Now, tasks will only be distrubed when the process is available!</p>
+<p>The solution for this is passing an <code>-Ofair</code> flag to the worker node. Now, tasks will only be distributed when the process is available!</p>
 <h1>Routing</h1>
 <p>Celery allows you to create different queues to route your tasks to, and then you can have workers subscribe to certain queues and they'll get assigned tasks from those queues.</p>
 <pre><code class="language-python">from celery import Celery
@@ -207,7 +204,7 @@ app.conf.task_default_routing_key = 'proj.default'
 <li>Routing Settings</li>
 </ol>
 <p>You can also have tasks assigned to queues based on names.
-Celery will go thorugh this list in order and use it's first match as the queue. If there are no matches, then it'll use the default queue.</p>
+Celery will go through this list in order and use its first match as the queue. If there are no matches, then it'll use the default queue.</p>
 <pre><code class="language-python">
 app.conf.task_routes = [
     {
