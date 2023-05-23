@@ -2,13 +2,14 @@
 body {
     margin: 0;
     line-height: 1.5em;
-    color: #333333;
-    background: #333333;
+    color: #131418;
+    background: #131418;
     font-family: helvetica, arial, sans-serif;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
+
 
 h1, h2, h3, h4, h5, h6, p, center {
     margin-bottom: 0;
@@ -42,7 +43,7 @@ nav section, header section, main, footer section {
 
 /* Navigation panel */
 nav {
-    background: #333333;
+    background: #131418;
     border-bottom: thin solid #111111;
     line-height: 3em;
 }
@@ -68,7 +69,7 @@ nav a:hover, nav a:active {
 
 /* Footer */
 footer {
-    background: #333;
+    background: #131418;
     margin-top: auto;
     padding: 1em 0;
     text-align: center;
@@ -93,6 +94,7 @@ article {
     margin-bottom: 1em;
 }
 
+article h4 a:link, article h4 a:visited,
 article h3 a:link, article h3 a:visited,
 article h2 a:link, article h2 a:visited,
 article h1 a:link, article h1 a:visited,
@@ -100,16 +102,30 @@ article h1 a:link, article h1 a:visited,
     color: #9d9d9d;
 }
 
+article h4 a:hover, article h4 a:active,
 article h3 a:hover, article h3 a:active,
 article h2 a:hover, article h2 a:active,
 article h1 a:hover, article h1 a:active,
 .more:hover, .more:active {
-    color: #ffffff;
+    color: #c87800;
+}
+
+article.item {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: thin dotted #9d9d9d;
+    margin-top: 0;
+    margin-bottom: 0;
 }
 
 article p {
     word-spacing: 2px;
     line-height: 1.2;
+    color: #9d9d9d;
+
 }
 
 p.meta {
