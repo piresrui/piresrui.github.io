@@ -17,6 +17,10 @@ h1, h2, h3, h4, h5, h6, p, center {
     color: #eaeaea;
 }
 
+p {
+    font: 16px/1.85 Roboto,sans-serif;
+}
+
 a:link, a:visited {
     color: #c87800;
     text-decoration: none
@@ -101,6 +105,11 @@ article h2 a:hover, article h2 a:active,
 article h1 a:hover, article h1 a:active,
 .more:hover, .more:active {
     color: #ffffff;
+}
+
+article p {
+    word-spacing: 2px;
+    line-height: 1.2;
 }
 
 p.meta {
